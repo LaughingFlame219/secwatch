@@ -1,30 +1,76 @@
 {
   "products": [
-    { "id": "panos",        "vendor": "PaloAlto", "name": "PAN-OS",            "source": "eol_date", "slug": "panos",
-      "link": "https://www.paloaltonetworks.com/services/support/end-of-life-announcements/end-of-life-summary" },
-    { "id": "pangp",        "vendor": "PaloAlto", "name": "GlobalProtect App", "source": "eol_date", "slug": "pangp",
-      "link": "https://www.paloaltonetworks.com/services/support/end-of-life-announcements/end-of-life-summary" },
-    { "id": "fortios",      "vendor": "Fortinet", "name": "FortiOS",           "source": "eol_date", "slug": "fortios",
-      "link": "https://support.fortinet.com/Information/ProductLifeCycle.aspx" },
-    { "id": "cisco-ios-xe", "vendor": "Cisco",    "name": "IOS XE",            "source": "eol_date", "slug": "cisco-ios-xe",
-      "link": "https://www.cisco.com/c/en/us/products/collateral/ios-nx-os-software/ios-xe-26/bulletin-c25-2378701.html" },
-    { "id": "junos",        "vendor": "Juniper",  "name": "Junos OS",          "source": "juniper_eol",
-      "url": "https://www.juniper.net/support/eol/junos.html", "link": "https://www.juniper.net/support/eol/junos.html" },
-    { "id": "arista-eos",   "vendor": "Arista",   "name": "EOS",               "source": "arista_eos_rss",
+    {
+      "id": "panos",
+      "vendor": "PaloAlto",
+      "name": "PAN-OS",
+      "source": "eol_date",
+      "slug": "panos",
+      "link": "https://www.paloaltonetworks.com/services/support/end-of-life-announcements/end-of-life-summary"
+    },
+    {
+      "id": "pangp",
+      "vendor": "PaloAlto",
+      "name": "GlobalProtect App",
+      "source": "eol_date",
+      "slug": "pangp",
+      "link": "https://www.paloaltonetworks.com/services/support/end-of-life-announcements/end-of-life-summary"
+    },
+    {
+      "id": "fortios",
+      "vendor": "Fortinet",
+      "name": "FortiOS",
+      "source": "eol_date",
+      "slug": "fortios",
+      "link": "https://support.fortinet.com/Information/ProductLifeCycle.aspx"
+    },
+    {
+      "id": "cisco-ios-xe",
+      "vendor": "Cisco",
+      "name": "IOS XE",
+      "source": "eol_date",
+      "slug": "cisco-ios-xe",
+      "link": "https://www.cisco.com/c/en/us/products/collateral/ios-nx-os-software/ios-xe-26/bulletin-c25-2378701.html"
+    },
+    {
+      "id": "junos",
+      "vendor": "Juniper",
+      "name": "Junos OS",
+      "source": "juniper_eol",
+      "url": "https://support.juniper.net/support/eol/software/junos/",
+      "link": "https://support.juniper.net/support/eol/software/junos/"
+    },
+    {
+      "id": "arista-eos",
+      "vendor": "Arista",
+      "name": "EOS",
+      "source": "arista_eos_rss",
       "url": "https://www.arista.com/support/advisories-notices/end-of-support-rss",
-      "link": "https://www.arista.com/en/support/advisories-notices/end-of-support" }
+      "link": "https://www.arista.com/en/support/advisories-notices/end-of-support"
+    }
   ],
-
   "feeds": [
-    { "vendor": "Fortinet", "name": "Fortinet ファームウェア更新", "url": "https://support.fortinet.com/rss/firmware.xml",
-      "release_regex": "(Forti[A-Za-z]+(?:[ -][A-Za-z]+)?)\\s+v?(\\d+\\.\\d+\\.\\d+)" },
-    { "vendor": "Arista", "name": "Arista End of Support", "url": "https://www.arista.com/support/advisories-notices/end-of-support-rss" }
+    {
+      "vendor": "Fortinet",
+      "name": "Fortinet ファームウェア更新",
+      "url": "https://support.fortinet.com/rss/firmware.xml",
+      "release_regex": "(Forti[A-Za-z]+(?:[ -][A-Za-z]+)?)\\s+v?(\\d+\\.\\d+\\.\\d+)"
+    },
+    {
+      "vendor": "Arista",
+      "name": "Arista End of Support",
+      "url": "https://www.arista.com/support/advisories-notices/end-of-support-rss"
+    }
   ],
-
   "notify": {
-    "eol_days": [180, 90, 30, 7, 0],
+    "eol_days": [
+      180,
+      90,
+      30,
+      7,
+      0
+    ],
     "max_push_per_run": 10
   },
-
   "keep_events": 300
 }

@@ -119,7 +119,7 @@ def fetch_juniper(p: dict) -> list[dict]:
         cells = [lib.strip_tags(c) for c in re.findall(r"(?is)<t[dh][^>]*>(.*?)</t[dh]>", row)]
         if len(cells) < 4:
             continue
-        m = re.match(r"Junos OS\s+(\d+\.\d+)", cells[0])
+        m = re.match(r"Junos(?:\s+OS)?\s+(\d+\.\d+)", cells[0])
         if not m:
             continue
         out.append({
