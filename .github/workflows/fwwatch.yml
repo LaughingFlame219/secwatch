@@ -1,0 +1,55 @@
+name: fwwatch
+
+on:
+  schedule:
+    - cron: "23 */3 * * *"   # 3時間ごと（EOL情報はゆっくり変わるので十分）
+  workflow_dispatch:
+    inputs:
+      notify_initial:
+        description: "初回でも通知する（テスト用）"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+# secwatch（collect）と同じグループにして、同時にデータをコミットしないようにする
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  fwwatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check firmware and EOL
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
+          NTFY_SERVER: ${{ vars.NTFY_SERVER }}
+          APP_URL: ${{ vars.APP_URL }}
+          MY_TRAINS: ${{ vars.MY_TRAINS }}
+          NOTIFY_RELEASES: ${{ vars.NOTIFY_RELEASES }}
+          NOTIFY_EOL: ${{ vars.NOTIFY_EOL }}
+          NOTIFY_INITIAL: ${{ inputs.notify_initial && '1' || '' }}
+        run: python collector_fw/run.py
+
+      - name: Commit data
+        run: |
+          git config user.name "secwatch-bot"
+          git config user.email "secwatch-bot@users.noreply.github.com"
+          git add docs/fw/data state_fw
+          if git diff --cached --quiet; then
+            echo "変更なし"
+          else
+            git commit -m "fw data: $(date -u +%Y-%m-%dT%H:%MZ)"
+            git pull --rebase
+            git push
+          fi
