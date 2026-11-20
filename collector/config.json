@@ -1,0 +1,69 @@
+{
+  "sources": [
+    {
+      "vendor": "PaloAlto",
+      "type": "paloalto_json",
+      "url": "https://security.paloaltonetworks.com/json?sort=-updated",
+      "prefer_cvss": "4",
+      "fallback": {
+        "type": "rss",
+        "url": "https://security.paloaltonetworks.com/rss.xml",
+        "id_regex": "(CVE-\\d{4}-\\d{4,7}|PAN-SA-\\d{4}-\\d{4})"
+      }
+    },
+    {
+      "vendor": "Fortinet",
+      "type": "rss",
+      "url": "https://www.fortiguard.com/rss/ir.xml",
+      "id_regex": "FG-IR-\\d{2}-\\d{3,4}",
+      "scrape_page": true
+    },
+    {
+      "vendor": "Cisco",
+      "type": "rss",
+      "url": "https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml",
+      "id_regex": "cisco-sa-[A-Za-z0-9_-]+",
+      "scrape_page": true
+    },
+    {
+      "vendor": "Arista",
+      "type": "html_list",
+      "url": "https://www.arista.com/en/support/advisories-notices/security-advisory",
+      "link_regex": "advis",
+      "id_regex": "Security[\\s-]*Advisory[\\s-]*0*(\\d{2,4})",
+      "id_format": "SA-{0:0>4}",
+      "scrape_page": true
+    },
+    {
+      "vendor": "Juniper",
+      "type": "rss",
+      "url": "https://supportportal.juniper.net/knowledgerss?type=Security",
+      "id_regex": "JSA\\d+",
+      "scrape_page": false
+    }
+  ],
+  "keep_days": 400,
+  "scrape_max_per_run": 30,
+  "nvd_max_per_run": 30,
+  "notify": {
+    "max_age_days": 14,
+    "max_push_per_run": 8,
+    "rule": {
+      "vendors": [],
+      "min_cvss": 7.0,
+      "severities": [
+        "CRITICAL",
+        "HIGH"
+      ],
+      "keywords": [],
+      "exclude_keywords": [],
+      "kev_always": true,
+      "notify_unscored": true
+    }
+  },
+  "translate": {
+    "max_per_run": 40,
+    "backfill_days": 30,
+    "summary_chars": 600
+  }
+}
