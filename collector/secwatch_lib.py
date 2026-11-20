@@ -218,6 +218,9 @@ def parse_paloalto_json(raw: bytes, src: dict) -> list[dict]:
             continue
         title = cna.get("title") or rec.get("title") or adv_id
         cv = _pick_cvss(_find_cvss(rec), prefer)
+        if cv is None and isinstance(rec.get("baseScore"), (int, float)):  # security.paloaltonetworks.com/json の形式
+            cv = {"score": float(rec["baseScore"]), "version": str(rec.get("cvssVersion") or ""),
+                  "vector": rec.get("vectorString", ""), "severity": rec.get("baseSeverity", "")}
         sev = norm_sev((cv or {}).get("severity") or rec.get("severity"))
         if not sev and cv:
             sev = sev_from_score(cv["score"])
@@ -226,15 +229,20 @@ def parse_paloalto_json(raw: bytes, src: dict) -> list[dict]:
             if d.get("lang", "en").startswith("en"):
                 desc = d.get("value", "")
                 break
+        if not desc:
+            for d in rec.get("problem") or []:
+                if isinstance(d, dict) and str(d.get("lang", "en")).startswith("en"):
+                    desc = d.get("value", "")
+                    break
         desc = desc or rec.get("description", "")
-        cves = sorted(set(CVE_RE.findall(json.dumps(rec)))) if adv_id.startswith("PAN-SA") else [adv_id] if CVE_RE.fullmatch(adv_id) else []
+        cves = [adv_id] if CVE_RE.fullmatch(adv_id) else sorted(set(CVE_RE.findall(f"{title} {desc}")))[:20]
         out.append(
             {
                 "adv_id": adv_id,
                 "title": title,
                 "url": f"https://security.paloaltonetworks.com/{adv_id}",
-                "published": to_iso(meta.get("datePublished") or cna.get("datePublic") or rec.get("published_date") or rec.get("date")),
-                "updated": to_iso(meta.get("dateUpdated") or rec.get("last_modified_date") or rec.get("updated")),
+                "published": to_iso(meta.get("datePublished") or cna.get("datePublic") or rec.get("published_date") or rec.get("date") or ""),
+                "updated": to_iso(meta.get("dateUpdated") or rec.get("last_modified_date") or rec.get("updated") or ""),
                 "severity": sev,
                 "cvss": cv["score"] if cv else None,
                 "cvss_version": cv["version"] if cv else "",
@@ -272,7 +280,9 @@ def parse_rss(raw: bytes, src: dict) -> list[dict]:
         adv_id = ""
         if id_re:
             m = id_re.search(blob)
-            adv_id = m.group(0) if m else ""
+            if m:
+                key = m.group(1) if m.groups() else m.group(0)
+                adv_id = src.get("id_format", "{0}").format(key)
         if not adv_id:
             adv_id = (f.get("guid") or link or hashlib.sha1(title.encode()).hexdigest()[:16]).strip()
         sev = ""
@@ -283,9 +293,20 @@ def parse_rss(raw: bytes, src: dict) -> list[dict]:
         if m:
             sev = norm_sev(m.group(1))
         score = None
-        m = re.search(r"CVSS\s*(?:v\d(?:\.\d)?)?[^0-9]{0,30}?(?:Score|base)[^0-9]{0,10}(\d{1,2}\.\d)", blob, re.I)
+        cv_ver = ""
+        m = re.search(r"CVSS\s*(?:v(\d(?:\.\d)?))?[^0-9]{0,30}?(?:Score|base)[^0-9]{0,10}(\d{1,2}\.\d)", blob, re.I)
         if m:
-            score = float(m.group(1))
+            score, cv_ver = float(m.group(2)), m.group(1) or ""
+        body = desc
+        if src.get("summary_after"):  # 例: Arista は改訂履歴の後の「Description」以降が本文
+            m = re.search(src["summary_after"], desc)
+            if m:
+                body = desc[m.end():].strip()
+        if src.get("title_from_summary") and body:  # 「Security Advisory 0229」だけでは中身が分からないので本文の1文目を足す
+            first = re.split(r"(?<=[.!?])\s", body, maxsplit=1)[0].strip()
+            if len(first) > 120:
+                first = first[:117].rsplit(" ", 1)[0] + "…"
+            title = f"{first}" if first else title
         out.append(
             {
                 "adv_id": adv_id,
@@ -295,10 +316,10 @@ def parse_rss(raw: bytes, src: dict) -> list[dict]:
                 "updated": to_iso(f.get("updated") or f.get("modified") or ""),
                 "severity": sev or sev_from_score(score),
                 "cvss": score,
-                "cvss_version": "",
+                "cvss_version": cv_ver,
                 "cvss_vector": "",
                 "cves": sorted(set(CVE_RE.findall(blob))),
-                "summary": desc[:1000],
+                "summary": body[:1000],
             }
         )
     return out

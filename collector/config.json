@@ -27,12 +27,21 @@
     },
     {
       "vendor": "Arista",
-      "type": "html_list",
-      "url": "https://www.arista.com/en/support/advisories-notices/security-advisory",
-      "link_regex": "advis",
+      "type": "rss",
+      "url": "https://www.arista.com/support/advisories-notices/security-advisory-rss",
       "id_regex": "Security[\\s-]*Advisory[\\s-]*0*(\\d{2,4})",
       "id_format": "SA-{0:0>4}",
-      "scrape_page": true
+      "summary_after": "\\bDescription\\b",
+      "title_from_summary": true,
+      "scrape_page": false,
+      "fallback": {
+        "type": "html_list",
+        "url": "https://www.arista.com/en/support/advisories-notices/security-advisory",
+        "link_regex": "advis",
+        "id_regex": "Security[\\s-]*Advisory[\\s-]*0*(\\d{2,4})",
+        "id_format": "SA-{0:0>4}",
+        "scrape_page": true
+      }
     },
     {
       "vendor": "Juniper",
