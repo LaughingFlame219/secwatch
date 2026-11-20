@@ -485,6 +485,8 @@ function viewSettings() {
       el("div", { class: "card" }, el("h2", {}, "通知"),
         el("p", {}, "通知は ntfy アプリから届きます。通知をタップすると、このアプリの詳細画面が開きます。"),
         el("p", {}, "通知の条件（CVSSのしきい値、製品名）は GitHub の Variables で変更できます。")),
+      el("div", { class: "card" }, el("h2", {}, "ほかのアプリ"),
+        el("a", { class: "btn sub", href: "fw/" }, "FW・EOLウォッチ（ファームウェア・サポート終了）を開く")),
       el("div", { class: "card" }, el("h2", {}, "バックアップ"),
         el("p", {}, "対応状況とメモはこの端末にだけ保存されています。機種変更やブラウザのデータ削除の前に書き出してください。"),
         el("div", { class: "row" },

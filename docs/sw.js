@@ -1,5 +1,5 @@
 // secwatch: 画面はキャッシュ、データはネット優先（電波がないときは前回分を表示）
-const CACHE = "secwatch-m-v1";
+const CACHE = "secwatch-m-v2";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -8,7 +8,7 @@ self.addEventListener("install", (e) => {
 
 self.addEventListener("activate", (e) => {
   e.waitUntil((async () => {
-    for (const k of await caches.keys()) if (k !== CACHE) await caches.delete(k);
+    for (const k of await caches.keys()) if (k.startsWith("secwatch-") && k !== CACHE) await caches.delete(k);
     await self.clients.claim();
   })());
 });
@@ -18,6 +18,7 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
+  if (url.pathname.startsWith(new URL("fw/", self.registration.scope).pathname)) return;  // FW・EOLウォッチは別アプリ
   const isData = url.pathname.endsWith("/data/advisories.json");
   const key = isData ? new URL("data/advisories.json", self.registration.scope).href
             : req.mode === "navigate" ? new URL("./", self.registration.scope).href : req;
