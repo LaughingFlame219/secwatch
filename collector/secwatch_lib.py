@@ -50,8 +50,19 @@ def log(msg: str) -> None:
     print(f"[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] {msg}", flush=True)
 
 
+BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36",
+    "Accept": "application/rss+xml,application/xml;q=0.9,text/html;q=0.8,*/*;q=0.7",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+BROWSER_HOSTS = ("arista.com",)  # 既定のUAだと別の応答を返すサイト
+
+
 def http_get(url: str, headers: dict | None = None, timeout: int = 30) -> bytes:
     h = {"User-Agent": UA, "Accept": "*/*"}
+    host = urllib.parse.urlparse(url).hostname or ""
+    if any(host == d or host.endswith("." + d) for d in BROWSER_HOSTS):
+        h.update(BROWSER_HEADERS)
     if headers:
         h.update(headers)
     req = urllib.request.Request(url, headers=h)
@@ -256,12 +267,17 @@ def parse_paloalto_json(raw: bytes, src: dict) -> list[dict]:
 
 def parse_rss(raw: bytes, src: dict) -> list[dict]:
     """RSS 2.0 / RSS 1.0(RDF) / Atom を汎用的に読む"""
-    root = ET.fromstring(raw)
-
     def local(tag: str) -> str:
         return tag.rsplit("}", 1)[-1]
 
-    items = [e for e in root.iter() if local(e.tag) in ("item", "entry")]
+    try:
+        root = ET.fromstring(raw)
+        items = [e for e in root.iter() if local(e.tag) in ("item", "entry")]
+    except ET.ParseError as e:
+        items = _loose_items(raw)
+        if not items:
+            head = re.sub(r"\s+", " ", raw[:300].decode("utf-8", "replace"))
+            raise ValueError(f"RSSとして読めない応答です（{e}）。応答の冒頭: {head[:160]}") from None
     id_re = re.compile(src["id_regex"]) if src.get("id_regex") else None
     out = []
     for it in items:
@@ -360,6 +376,33 @@ def parse_html_list(raw: bytes, src: dict) -> list[dict]:
         o.pop("_good", None)
     if not out:
         raise ValueError("一覧ページからアドバイザリを見つけられませんでした（ページ構成が変わった可能性）")
+    return out
+
+
+class _LooseElem:
+    """XMLとして壊れたRSSから取り出した項目を、ElementTree の要素と同じように扱うための入れ物"""
+    def __init__(self, tag, text=None, attrib=None, children=None):
+        self.tag, self.text, self.attrib, self._children = tag, text, attrib or {}, children or []
+
+    def __iter__(self):
+        return iter(self._children)
+
+    def get(self, k, d=None):
+        return self.attrib.get(k, d)
+
+
+def _loose_items(raw: bytes) -> list:
+    text = raw.decode("utf-8", "replace")
+    out = []
+    for m in re.finditer(r"(?is)<(item|entry)\b[^>]*>(.*?)</\1>", text):
+        kids = []
+        for f in re.finditer(r"(?is)<([a-z][\w:.-]*)\b([^>]*?)(?:/>|>(.*?)</\1>)", m.group(2)):
+            tag, attrs, body = f.group(1).split(":")[-1], f.group(2), f.group(3) or ""
+            body = re.sub(r"(?s)<!\[CDATA\[(.*?)\]\]>", r"\1", body)
+            href = re.search(r'href=["\']([^"\']+)', attrs or "")
+            kids.append(_LooseElem(tag, html.unescape(body) if "<" not in body or tag in ("description", "summary", "content", "encoded") else body,
+                                   {"href": href.group(1)} if href else {}))
+        out.append(_LooseElem(m.group(1), None, None, kids))
     return out
 
 
