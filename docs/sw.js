@@ -1,10 +1,41 @@
-// 以前の secwatch はこの階層全体を担当していましたが、アプリを sec/ と fw/ に分けたため役目を終えました。
-// 古い仕組みが残っている端末では、これが読み込まれた時点で自分自身を解除し、古いキャッシュを消します。
-self.addEventListener("install", () => self.skipWaiting());
+// secwatch: 画面はキャッシュ、データはネット優先（電波がないときは前回分を表示）
+const CACHE = "secwatch-m-v3";
+const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+
+self.addEventListener("install", (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+});
+
 self.addEventListener("activate", (e) => {
   e.waitUntil((async () => {
-    for (const k of await caches.keys()) if (k === "secwatch-m-v1" || k === "secwatch-m-v2") await caches.delete(k);
-    await self.registration.unregister();
-    for (const c of await self.clients.matchAll({ type: "window" })) c.navigate(c.url);
+    for (const k of await caches.keys()) if (k.startsWith("secwatch-") && k !== CACHE) await caches.delete(k);
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener("fetch", (e) => {
+  const req = e.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  if (url.origin !== location.origin) return;
+  const isData = url.pathname.endsWith("/data/advisories.json");
+  const key = isData ? new URL("data/advisories.json", self.registration.scope).href
+            : req.mode === "navigate" ? new URL("./", self.registration.scope).href : req;
+
+  e.respondWith((async () => {
+    const c = await caches.open(CACHE);
+    try {
+      const res = await fetch(req);
+      if (res.ok) c.put(key, res.clone());
+      return res;
+    } catch (err) {
+      const hit = await c.match(key);
+      if (!hit) throw err;
+      if (isData) {
+        const h = new Headers(hit.headers); h.set("X-From-Cache", "1");
+        return new Response(await hit.blob(), { status: 200, headers: h });
+      }
+      return hit;
+    }
   })());
 });
