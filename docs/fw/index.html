@@ -354,7 +354,7 @@ function viewSettings() {
       el("div", { class: "card" }, el("h2", {}, "データの取得状況"),
         (DATA.runs || []).map(r => el("div", { class: "src" }, el("span", {}, r.source), el("span", {}, r.ok ? `✅ ${r.count}` : "❌ 取得失敗")))),
       el("div", { class: "card" }, el("h2", {}, "ほかのアプリ"),
-        el("div", { style: "padding:0 14px 6px" }, el("a", { class: "btn sub", href: "../" }, "secwatch（セキュリティ情報）を開く"))),
+        el("div", { style: "padding:0 14px 6px" }, el("a", { class: "btn sub", href: "../sec/" }, "secwatch（セキュリティ情報）を開く"))),
       el("div", { class: "card" }, el("h2", {}, "この端末のデータ"),
         el("p", {}, "マイバージョンと既読はこの端末にだけ保存されています。"),
         el("div", { style: "padding:0 14px 6px" }, el("button", { class: "btn sub", onclick: () => { for (const e of DATA.events) READ[e.id] = 1; store.set("read", READ); toast("すべて既読にしました"); } }, "お知らせをすべて既読にする")))));
