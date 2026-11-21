@@ -12,6 +12,7 @@ secwatch mobile - GitHub Actions で定期実行する収集スクリプト
   NTFY_TOPIC       … 通知先トピック（未設定なら通知なし）
   NTFY_SERVER      … 既定 https://ntfy.sh
   NTFY_TOKEN       … ntfy のアクセストークン（任意）
+  DISCORD_WEBHOOK  … Discord の Webhook URL（任意。設定すると Discord にも送る）
   APP_URL          … アプリのURL（例 https://yourname.github.io/secwatch-mobile/）
   NVD_API_KEY      … 任意
   DEEPL_API_KEY    … 任意。DeepL API Free のキー（末尾 :fx）。未設定なら Argos Translate で翻訳
@@ -33,6 +34,7 @@ import urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import secwatch_lib as lib  # noqa: E402
 from translate import Translator  # noqa: E402
+import discord  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG = os.path.join(ROOT, "collector", "config.json")
@@ -226,7 +228,8 @@ def deep_link(a: dict) -> str:
 def push(payload: dict) -> bool:
     topic = env("NTFY_TOPIC")
     if not topic:
-        log(f"  [通知:未設定のため表示のみ] {payload.get('title')} / {payload.get('message', '')[:80]}")
+        if not discord.enabled("sec"):
+            log(f"  [通知:未設定のため表示のみ] {payload.get('title')} / {payload.get('message', '')[:80]}")
         return True
     payload = dict(payload, topic=topic)
     base = app_url()
@@ -263,9 +266,48 @@ def push_advisory(a: dict, kev_added: bool = False) -> bool:
     if excerpt.lower().startswith(a["title"].lower()[:40]) or excerpt.startswith((ja.get("title") or "\0")[:20]):
         excerpt = ""
     message = f"{head}\n{excerpt[:200]}" if excerpt else head
-    return push({"title": title, "message": message[:1000], "priority": prio, "tags": [tag],
-                 "click": deep_link(a),
-                 "actions": [{"action": "view", "label": "原文", "url": a["url"]}] if a["url"].startswith("http") else []})
+    ok = push({"title": title, "message": message[:1000], "priority": prio, "tags": [tag],
+               "click": deep_link(a),
+               "actions": [{"action": "view", "label": "原文", "url": a["url"]}] if a["url"].startswith("http") else []})
+    discord_advisory(a, title, head, excerpt, sev, prio, kev_added)
+    return ok
+
+
+def discord_advisory(a: dict, title: str, head: str, excerpt: str, sev: str, prio: int, kev_added: bool) -> None:
+    """Discord には重要度で色分けしたカード（embed）で送る"""
+    if not discord.enabled("sec"):
+        return
+    min_cvss = env("DISCORD_MIN_CVSS")
+    if min_cvss and not a["kev"] and (a["cvss"] is None or a["cvss"] < float(min_cvss)):
+        return
+    icon = "🚨" if a["kev"] else {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡"}.get(sev, "⚪")
+    links = [f"[アプリで開く]({deep_link(a)})"] if app_url() else []
+    if a["url"].startswith("http"):
+        links.append(f"[原文]({a['url']})")
+    fields = [
+        {"name": "CVSS", "value": (f"{a['cvss']:.1f} {sev}" + (f"（v{a['cvss_version']}）" if a["cvss_version"] else "")) if a["cvss"] is not None else (sev or "未発表"), "inline": True},
+        {"name": "CISA KEV", "value": f"悪用確認済み（{a['kev_date']}）" if a["kev"] else "掲載なし", "inline": True},
+    ]
+    if a["cves"]:
+        fields.append({"name": "CVE", "value": discord.clip(", ".join(a["cves"][:5]) + (" ほか" if len(a["cves"]) > 5 else ""), 1000), "inline": False})
+    if links:
+        fields.append({"name": "リンク", "value": " ・ ".join(links), "inline": False})
+    embed = {
+        "author": {"name": f"{VENDOR_NAME.get(a['vendor'], a['vendor'])} ・ {a['adv_id']}"},
+        "title": discord.clip(head, 250),
+        "description": discord.clip(excerpt, 600) if excerpt else None,
+        "color": discord.COLOR["kev"] if a["kev"] else discord.COLOR.get(sev, discord.COLOR["info"]),
+        "fields": fields,
+        "footer": {"text": "secwatch" + (" ・ 日本語は機械翻訳" if a.get("ja") else "")},
+    }
+    if deep_link(a).startswith("http"):
+        embed["url"] = deep_link(a)
+    if a.get("published"):
+        embed["timestamp"] = a["published"]
+    embed = {k: v for k, v in embed.items() if v is not None}
+    base = app_url()
+    discord.send("sec", f"{icon} {title}", embed, "secwatch", base + "icon-192.png" if base else "",
+                 urgent=prio >= 5, log=log)
 
 
 # ----------------------------------------------------------------------------
@@ -417,9 +459,12 @@ def main() -> int:
             sent += push_advisory(a)
         rest = to_notify[limit:]
         if rest:
-            push({"title": f"ほか {len(rest)}件の新しいアドバイザリ",
-                  "message": "、".join(f"{VENDOR_NAME.get(a['vendor'], a['vendor'])} {a['adv_id']}" for a in rest[:10]),
+            names = "、".join(f"{VENDOR_NAME.get(a['vendor'], a['vendor'])} {a['adv_id']}" for a in rest[:10])
+            push({"title": f"ほか {len(rest)}件の新しいアドバイザリ", "message": names,
                   "priority": 3, "tags": ["bell"], "click": app_url() or "https://ntfy.sh"})
+            discord.send("sec", f"🔔 ほか {len(rest)}件の新しいアドバイザリ",
+                         {"description": discord.clip(names, 1000) + (f"\n\n[アプリで確認]({app_url()})" if app_url() else ""),
+                          "color": discord.COLOR["info"]}, "secwatch", (app_url() + "icon-192.png") if app_url() else "", log=log)
         for a in kev_added[:limit]:
             sent += push_advisory(a, kev_added=True)
     for a in advs.values():
