@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1d2330">
+<title>secwatch アプリ</title>
+<script>
+  // 以前の通知のリンク（/secwatch/#/a/...）は secwatch アプリへ転送する
+  if (/^#\/(a|c|settings)/.test(location.hash)) location.replace("sec/" + location.hash);
+</script>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--fg:#1b1f29;--mut:#6b7280;--line:#e6e7eb}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--fg:#e8eaee;--mut:#9aa3b2;--line:#252a34}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 -apple-system,"Hiragino Sans","Noto Sans JP",Roboto,sans-serif}
+header{background:#1d2330;color:#fff;padding:calc(env(safe-area-inset-top) + 18px) 20px 18px}
+header h1{margin:0;font-size:19px}header p{margin:2px 0 0;font-size:12px;opacity:.7}
+main{padding:16px;max-width:560px;margin:0 auto}
+a.app{display:flex;gap:14px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:0 0 12px;color:inherit;text-decoration:none}
+a.app img{width:56px;height:56px;border-radius:14px;flex:none}
+a.app b{display:block;font-size:16px}a.app span{font-size:13px;color:var(--mut)}
+.note{font-size:13px;color:var(--mut);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:18px}
+.note b{color:var(--fg)}
+</style>
+</head>
+<body>
+<header><h1>secwatch アプリ</h1><p>開いたアプリの画面から「ホーム画面に追加」すると、それぞれ別のアプリとして入ります</p></header>
+<main>
+  <a class="app" href="sec/"><img src="sec/icon-192.png" alt=""><div><b>secwatch</b><span>セキュリティアドバイザリ（CVSS・KEV・日本語訳）</span></div></a>
+  <a class="app" href="fw/"><img src="fw/icon-192.png" alt=""><div><b>FW・EOLウォッチ</b><span>ファームウェアの新バージョンとサポート終了</span></div></a>
+  <div class="note"><b>以前 secwatch をホーム画面に入れていた場合</b><br>
+    古いアイコンは両方のアプリをまとめて開いてしまうので、長押しして削除してから、上のそれぞれのアプリを入れ直してください。
+    対応状況やメモはそのまま残ります。</div>
+</main>
+<script>
+  // 以前の secwatch（このページ全体を担当していた古い仕組み）を解除する
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => {
+      if (new URL(r.scope).pathname === location.pathname.replace(/index\.html$/, "")) r.unregister();
+    })).catch(() => {});
+  }
+</script>
+</body>
+</html>

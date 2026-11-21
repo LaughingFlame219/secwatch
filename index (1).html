@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1d2330">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<title>FW・EOLウォッチ</title>
+<style>
+:root{
+  --bg:#f5f5f7;--card:#fff;--fg:#1b1f29;--mut:#6b7280;--line:#e6e7eb;--chip:#eef0f3;--acc:#16a34a;--accbg:#e8f7ee;
+  --top:#1d2330;--red:#c42b2b;--org:#e05a1a;--yel:#b7791f;--grn:#15803d;--gry:#6b7280;--unread:#d93025;--sel:#e8eefc;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0e1116;--card:#171b22;--fg:#e8eaee;--mut:#9aa3b2;--line:#252a34;--chip:#222833;--accbg:#12301f;--sel:#1e2a44}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 -apple-system,"Hiragino Sans","Noto Sans JP",Roboto,sans-serif}
+button,input{font:inherit;color:inherit}button{cursor:pointer}a{color:var(--acc)}
+.bar{position:sticky;top:0;z-index:5;background:var(--top);color:#fff;padding:calc(env(safe-area-inset-top) + 8px) 8px 8px;display:flex;align-items:center;gap:6px;min-height:56px}
+.bar h1{font-size:18px;margin:0 0 0 8px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar h1 small{display:block;font-size:11px;font-weight:400;opacity:.7}
+.ib{background:transparent;border:0;color:#fff;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;flex:none}
+.ib:active{background:rgba(255,255,255,.15)}.ib svg{width:22px;height:22px}
+.spin svg{animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.tabs{display:flex;background:var(--top);padding:0 8px;position:sticky;top:56px;z-index:4}
+.tab{flex:1;border:0;background:none;color:rgba(255,255,255,.65);padding:10px 0 9px;font-weight:700;font-size:14px;border-bottom:3px solid transparent;position:relative}
+.tab.on{color:#fff;border-bottom-color:var(--acc)}
+.tab .dot{position:absolute;top:8px;margin-left:4px;width:7px;height:7px;border-radius:50%;background:var(--unread);display:inline-block}
+.banner{margin:8px 12px 0;background:#fff4e5;color:#8a4b00;border-radius:10px;padding:8px 12px;font-size:13px}
+@media (prefers-color-scheme:dark){.banner{background:#3a2a12;color:#ffcf8a}}
+.sec{font-size:12px;color:var(--mut);padding:14px 14px 6px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.wrap{padding:0 12px 32px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:10px 0;overflow:hidden}
+/* マイバージョン */
+.mv{display:block;width:100%;text-align:left;border:0;background:none;padding:14px}
+.mv:active{background:var(--sel)}
+.mvh{display:flex;align-items:center;gap:10px}
+.av{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:12px}
+.mvn{flex:1;min-width:0}.mvn b{font-size:16px}.mvn div{font-size:12px;color:var(--mut)}
+.cd{display:flex;align-items:baseline;gap:6px;margin:10px 0 6px}
+.cd b{font-size:30px;line-height:1;font-variant-numeric:tabular-nums}.cd span{font-size:13px;color:var(--mut)}
+.bar2{height:8px;border-radius:4px;background:var(--chip);overflow:hidden;position:relative}
+.bar2 i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.bar2 em{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--fg);opacity:.5}
+.mvf{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-top:6px;gap:8px}
+.st{display:inline-block;border-radius:6px;padding:0 8px;font-size:12px;font-weight:700;line-height:22px;color:#fff;white-space:nowrap}
+.s-red{background:var(--red)}.s-org{background:var(--org)}.s-yel{background:var(--yel)}.s-grn{background:var(--grn)}.s-gry{background:var(--gry)}
+.empty{text-align:center;color:var(--mut);padding:36px 16px}
+.btn{display:block;width:100%;text-align:center;border:0;border-radius:12px;padding:12px;font-weight:700;background:var(--acc);color:#fff;text-decoration:none;margin:12px 0}
+.btn.sub{background:var(--chip);color:var(--fg)}
+/* ベンダー別 */
+.vh{display:flex;align-items:center;gap:10px;padding:12px 14px 6px}
+.vh b{font-size:16px;flex:1}
+.pn{font-size:13px;font-weight:700;padding:8px 14px 4px;color:var(--mut);display:flex;justify-content:space-between}
+.tr{display:grid;grid-template-columns:62px 1fr auto;gap:8px;align-items:center;width:100%;border:0;border-top:1px solid var(--line);background:none;padding:10px 14px;text-align:left}
+.tr:active{background:var(--sel)}
+.tr .t{font-weight:800;font-variant-numeric:tabular-nums}
+.tr .m{font-size:12px;color:var(--mut);min-width:0}
+.tr .m b{color:var(--fg);font-weight:600}
+.star{color:#f5a524;font-size:13px}
+.toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut);background:none;border:0;padding:0}
+.sw{width:34px;height:20px;border-radius:10px;background:var(--chip);position:relative;transition:.2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:.2s}
+.toggle.on .sw{background:var(--acc)}.toggle.on .sw::after{left:16px}
+/* お知らせ */
+.ev{display:flex;gap:10px;width:100%;border:0;border-top:1px solid var(--line);background:none;padding:11px 14px;text-align:left;position:relative}
+.ev:first-child{border-top:0}
+.ev:active{background:var(--sel)}
+.ei{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:15px}
+.e-release{background:#dcfce7}.e-train{background:#dbeafe}.e-eol{background:#fee2e2}.e-news{background:#fef3c7}
+@media (prefers-color-scheme:dark){.e-release{background:#14532d}.e-train{background:#1e3a8a}.e-eol{background:#7f1d1d}.e-news{background:#5b4210}}
+.eb{flex:1;min-width:0}.eb b{display:block;font-size:14px;word-break:break-word}.eb span{font-size:12px;color:var(--mut)}
+.ev.unread::after{content:"";position:absolute;right:14px;top:16px;width:8px;height:8px;border-radius:50%;background:var(--unread)}
+.day{font-size:12px;color:var(--mut);padding:12px 4px 2px;font-weight:600}
+/* 詳細 */
+.dt{padding:14px}
+.big{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.big .cd{margin:0;flex-direction:column;align-items:flex-start;gap:2px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:14px;padding:12px 14px}
+.kv dt{color:var(--mut);font-size:13px}.kv dd{margin:0;word-break:break-all}
+.note{font-size:11px;color:var(--mut);padding:0 14px 12px}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .2s;z-index:20;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+.code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;word-break:break-all;margin:8px 0}
+.set p{font-size:13px;color:var(--mut);margin:4px 14px}.set h2{font-size:14px;margin:12px 14px 6px}
+.src{display:flex;justify-content:space-between;font-size:13px;padding:6px 14px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script>
+"use strict";
+const VENDORS = {
+  PaloAlto: { name: "Palo Alto", short: "PA", color: "#e8562a" },
+  Fortinet: { name: "Fortinet",  short: "FT", color: "#d62f2f" },
+  Cisco:    { name: "Cisco",     short: "CS", color: "#0a8fc9" },
+  Juniper:  { name: "Juniper",   short: "JN", color: "#2f8a4f" },
+  Arista:   { name: "Arista",    short: "AR", color: "#2b4c8c" },
+};
+const EOAS_LABEL = { fortios: "エンジニアリングサポート終了", junos: "エンジニアリング終了" };
+const ICON = {
+  back: '<path d="M15 18l-6-6 6-6"/>',
+  reload: '<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+};
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("fw." + k); return v === null ? d : JSON.parse(v); } catch (_) { return d; } },
+  set(k, v) { try { localStorage.setItem("fw." + k, JSON.stringify(v)); } catch (_) {} },
+};
+let MINE = store.get("mine", []);          // ["panos:11.1", ...]
+let READ = store.get("read", {});
+let tab = store.get("tab", MINE.length ? "mine" : "vendors");
+let showEol = false;
+let DATA = { products: [], events: [], runs: [] };
+let loading = false, loadError = "";
+
+const $ = (s, r = document) => r.querySelector(s);
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k === "html") e.innerHTML = v;   // 固定のSVGアイコンだけ
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat(Infinity)) if (c !== null && c !== undefined && c !== false && c !== "") e.append(c.nodeType ? c : String(c));
+  return e;
+}
+const svg = (n) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`;
+function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove("show"), 1600); }
+const vinfo = (v) => VENDORS[v] || { name: v, short: (v || "?").slice(0, 2).toUpperCase(), color: "#667085" };
+const safeUrl = (u) => /^https?:\/\//i.test(u || "") ? u : null;
+const WD = ["日", "月", "火", "水", "木", "金", "土"];
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const daysUntil = (iso) => iso ? Math.round((new Date(iso + "T00:00:00") - new Date(todayStr() + "T00:00:00")) / 864e5) : null;
+function fmt(iso) { if (!iso) return "—"; const [y, m, d] = iso.split("-"); return `${y}/${+m}/${+d}`; }
+function dayLabel(iso) { const d = new Date(iso + "T00:00:00"); return isNaN(d) ? "日付不明" : `${d.getMonth() + 1}月${d.getDate()}日(${WD[d.getDay()]})`; }
+
+/* ---------- 状態の判定 ---------- */
+function status(t) {
+  const n = daysUntil(t.eol), today = todayStr();
+  if (!t.eol) return { cls: "s-grn", label: "EOL未定", n: null };
+  if (n < 0) return { cls: "s-gry", label: "サポート終了", n };
+  if (n <= 90) return { cls: "s-red", label: `残り${n}日`, n };
+  if (n <= 180) return { cls: "s-org", label: "残り半年未満", n };
+  if ((t.eoas && t.eoas < today) || (t.eoes && t.eoes < today)) return { cls: "s-yel", label: "保守フェーズ", n };
+  return { cls: "s-grn", label: "サポート中", n };
+}
+const colorOf = (cls) => ({ "s-red": "var(--red)", "s-org": "var(--org)", "s-yel": "var(--yel)", "s-grn": "var(--grn)", "s-gry": "var(--gry)" })[cls];
+function findTrain(key) {
+  const [pid, train] = key.split(":");
+  const p = DATA.products.find(x => x.id === pid);
+  const t = p && p.trains.find(x => x.train === train);
+  return p && t ? { p, t } : null;
+}
+const isMine = (key) => MINE.includes(key);
+function toggleMine(key) {
+  MINE = isMine(key) ? MINE.filter(k => k !== key) : [...MINE, key];
+  store.set("mine", MINE);
+  toast(isMine(key) ? "マイバージョンに追加しました" : "マイバージョンから外しました");
+}
+
+/* ---------- データ ---------- */
+async function load(manual) {
+  if (loading) return;
+  loading = true; render();
+  try {
+    const r = await fetch("data/fw.json?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    DATA = await r.json();
+    loadError = r.headers.get("X-From-Cache") ? "オフラインのため、前回のデータを表示しています" : "";
+    if (!store.get("init", false)) {  // 初回: 7日より前のお知らせは既読扱い
+      const cut = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+      for (const e of DATA.events) if ((e.date || "") < cut) READ[e.id] = 1;
+      store.set("read", READ); store.set("init", true);
+    }
+    if (manual) toast("更新しました");
+  } catch (e) {
+    loadError = DATA.products.length ? "" : "データを取得できませんでした（" + e.message + "）";
+  } finally { loading = false; render(); }
+}
+
+/* ---------- ルーティング ---------- */
+let navDepth = 0;
+function go(h) { navDepth++; location.hash = h; }
+function back() { if (navDepth > 0) { navDepth--; history.back(); } else location.replace("#/"); }
+window.addEventListener("hashchange", () => { render(); window.scrollTo(0, 0); });
+function route() { const p = (location.hash.replace(/^#\/?/, "") || "").split("/").map(decodeURIComponent); return { name: p[0] || "home", a: p[1] || "", b: p[2] || "" }; }
+
+/* ---------- 部品 ---------- */
+function topbar(title, sub, { backBtn, actions } = {}) {
+  return el("header", { class: "bar" },
+    backBtn ? el("button", { class: "ib", "aria-label": "戻る", html: svg("back"), onclick: back }) : null,
+    el("h1", {}, title, sub ? el("small", {}, sub) : null), actions || null);
+}
+const avatar = (v) => el("div", { class: "av", style: `background:${vinfo(v).color}` }, vinfo(v).short);
+function progress(t) {
+  if (!t.released || !t.eol) return null;
+  const a = new Date(t.released), b = new Date(t.eol), now = new Date();
+  const pct = Math.max(0, Math.min(100, (now - a) / (b - a) * 100));
+  const s = status(t);
+  const eoas = t.eoas || t.eoes;
+  const mark = eoas ? Math.max(0, Math.min(100, (new Date(eoas) - a) / (b - a) * 100)) : null;
+  return el("div", { class: "bar2" }, el("i", { style: `width:${pct}%;background:${colorOf(s.cls)}` }),
+    mark !== null ? el("em", { style: `left:${mark}%`, title: "エンジニアリング/アクティブサポート終了" }) : null);
+}
+function lastUpdated() {
+  if (!DATA.generated) return loading ? "読み込み中…" : "";
+  const bad = (DATA.runs || []).filter(r => !r.ok).map(r => vinfo(r.vendor).name);
+  const g = new Date(DATA.generated);
+  return `更新 ${g.getMonth() + 1}/${g.getDate()} ${g.getHours()}:${String(g.getMinutes()).padStart(2, "0")}` + (bad.length ? " ・ ⚠ " + [...new Set(bad)].join(", ") : "");
+}
+
+/* ---------- 画面: ホーム ---------- */
+function viewHome() {
+  const unread = DATA.events.filter(e => !READ[e.id]).length;
+  const root = el("div", {},
+    topbar("FW・EOLウォッチ", lastUpdated(), { actions: [
+      el("button", { class: "ib" + (loading ? " spin" : ""), "aria-label": "更新", html: svg("reload"), onclick: () => load(true) }),
+      el("button", { class: "ib", "aria-label": "設定", html: svg("gear"), onclick: () => go("#/settings") })] }),
+    el("div", { class: "tabs" }, [["mine", "マイバージョン"], ["vendors", "ベンダー別"], ["news", "お知らせ"]].map(([k, l]) =>
+      el("button", { class: "tab" + (tab === k ? " on" : ""), onclick: () => { tab = k; store.set("tab", k); render(); } }, l,
+        k === "news" && unread ? el("span", { class: "dot" }) : null))));
+  if (loadError) root.append(el("div", { class: "banner" }, loadError));
+  root.append(tab === "mine" ? viewMine() : tab === "news" ? viewNews() : viewVendors());
+  return root;
+}
+
+function viewMine() {
+  const items = MINE.map(findTrain).filter(Boolean).sort((x, y) => (status(x.t).n ?? 99999) - (status(y.t).n ?? 99999));
+  const w = el("div", { class: "wrap" });
+  if (!items.length) {
+    w.append(el("div", { class: "empty" }, "使っているバージョンを登録すると、サポート終了までの日数がここに並びます。"),
+      el("button", { class: "btn", onclick: () => { tab = "vendors"; store.set("tab", tab); render(); } }, "バージョンを選ぶ"));
+    return w;
+  }
+  w.append(el("div", { class: "sec" }, "サポート終了が近い順"));
+  for (const { p, t } of items) {
+    const s = status(t);
+    w.append(el("div", { class: "card" }, el("button", { class: "mv", onclick: () => go(`#/t/${encodeURIComponent(p.id)}/${encodeURIComponent(t.train)}`) },
+      el("div", { class: "mvh" }, avatar(p.vendor), el("div", { class: "mvn" }, el("b", {}, `${p.name} ${t.label || t.train}`),
+        el("div", {}, t.latest ? `最新 ${t.latest}${t.latestDate ? "（" + fmt(t.latestDate) + "）" : ""}` : vinfo(p.vendor).name)),
+        el("span", { class: "st " + s.cls }, s.label)),
+      el("div", { class: "cd" }, s.n === null ? el("b", {}, "—") : s.n < 0 ? el("b", { style: "color:var(--gry)" }, `${-s.n}日経過`) :
+        el("b", { style: `color:${colorOf(s.cls)}` }, s.n.toLocaleString()), el("span", {}, s.n === null ? "EOL日は未発表" : s.n < 0 ? "サポート終了から" : "日でサポート終了")),
+      progress(t),
+      el("div", { class: "mvf" }, el("span", {}, `リリース ${fmt(t.released)}`), el("span", {}, `EOL ${fmt(t.eol)}`)))));
+  }
+  return w;
+}
+
+function viewVendors() {
+  const w = el("div", { class: "wrap" });
+  w.append(el("div", { class: "sec" }, el("span", {}, "★ はマイバージョン"),
+    el("button", { class: "toggle" + (showEol ? " on" : ""), onclick: () => { showEol = !showEol; render(); } }, el("span", { class: "sw" }), "終了済みも表示")));
+  const byVendor = {};
+  for (const p of DATA.products) (byVendor[p.vendor] = byVendor[p.vendor] || []).push(p);
+  for (const vid of [...Object.keys(VENDORS), ...Object.keys(byVendor).filter(v => !VENDORS[v])]) {
+    const ps = byVendor[vid]; if (!ps) continue;
+    const run = (DATA.runs || []).find(r => r.vendor === vid && !r.ok);
+    const card = el("div", { class: "card" }, el("div", { class: "vh" }, avatar(vid), el("b", {}, vinfo(vid).name),
+      run ? el("span", { class: "st s-gry" }, "取得失敗（前回のデータ）") : null));
+    for (const p of ps) {
+      const trains = p.trains.filter(t => showEol || status(t).cls !== "s-gry");
+      card.append(el("div", { class: "pn" }, el("span", {}, p.name), el("span", {}, `${trains.length}系列`)));
+      if (!trains.length) card.append(el("div", { class: "tr", style: "grid-template-columns:1fr;color:var(--mut);font-size:13px" }, p.trains.length ? "サポート中の系列はありません" : "データがありません"));
+      for (const t of trains) {
+        const s = status(t), key = `${p.id}:${t.train}`;
+        card.append(el("button", { class: "tr", onclick: () => go(`#/t/${encodeURIComponent(p.id)}/${encodeURIComponent(t.train)}`) },
+          el("span", { class: "t" }, t.train, isMine(key) ? el("span", { class: "star" }, " ★") : null),
+          el("span", { class: "m" }, t.latest ? el("b", {}, t.latest) : null, t.latest ? " ・ " : "", `EOL ${fmt(t.eol)}`, t.type ? ` ・ ${t.type}` : ""),
+          el("span", { class: "st " + s.cls }, s.label)));
+      }
+    }
+    w.append(card);
+  }
+  if (!DATA.products.length && !loading) w.append(el("div", { class: "empty" }, "まだデータがありません。GitHub Actions の fwwatch を実行してください。"));
+  return w;
+}
+
+const EV_ICON = { release: "⬆️", train: "🆕", eol: "⏳", news: "📢" };
+function viewNews() {
+  const w = el("div", { class: "wrap" });
+  const evs = [...DATA.events].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.at || "").localeCompare(a.at || ""));
+  if (!evs.length) { w.append(el("div", { class: "empty" }, "まだお知らせはありません")); return w; }
+  const unread = evs.filter(e => !READ[e.id]);
+  w.append(el("div", { class: "sec" }, el("span", {}, "新バージョン・新系列・サポート終了・告知"),
+    unread.length ? el("button", { class: "toggle", style: "color:var(--acc);font-weight:700", onclick: () => { for (const e of evs) READ[e.id] = 1; store.set("read", READ); render(); } }, "すべて既読") : null));
+  let day = "", card = null;
+  for (const e of evs.slice(0, 150)) {
+    if (e.date !== day) { day = e.date; w.append(el("div", { class: "day" }, dayLabel(day))); card = el("div", { class: "card" }); w.append(card); }
+    const sub = [vinfo(e.vendor).name, e.type === "eol" && e.eolDate ? `EOL ${fmt(e.eolDate)}` : "", e.type === "release" && e.train ? `${e.train}系` : ""].filter(Boolean).join(" ・ ");
+    card.append(el("button", { class: "ev" + (READ[e.id] ? "" : " unread"), onclick: () => {
+        READ[e.id] = 1; store.set("read", READ);
+        if (e.product && e.train && findTrain(`${e.product}:${e.train}`)) go(`#/t/${encodeURIComponent(e.product)}/${encodeURIComponent(e.train)}`);
+        else if (safeUrl(e.url)) { window.open(e.url, "_blank", "noopener"); render(); } else render();
+      } },
+      el("div", { class: "ei e-" + e.type }, EV_ICON[e.type] || "•"),
+      el("div", { class: "eb" }, el("b", {}, e.title), el("span", {}, sub))));
+  }
+  return w;
+}
+
+/* ---------- 画面: 系列の詳細 ---------- */
+function viewTrain(pid, train) {
+  const f = findTrain(`${pid}:${train}`);
+  if (!f) return el("div", {}, topbar("詳細", "", { backBtn: true }), el("div", { class: "empty" }, loading ? "読み込み中…" : "この系列は見つかりませんでした"));
+  const { p, t } = f, s = status(t), key = `${p.id}:${t.train}`;
+  for (const e of DATA.events) if (e.product === p.id && e.train === t.train && !READ[e.id]) { READ[e.id] = 1; store.set("read", READ); }
+  const evs = DATA.events.filter(e => e.product === p.id && e.train === t.train).slice(0, 10);
+  const eoasLabel = EOAS_LABEL[p.id] || "アクティブサポート終了";
+  const starBtn = el("button", { class: "btn" + (isMine(key) ? " sub" : ""), onclick: () => { toggleMine(key); render(); } },
+    isMine(key) ? "★ マイバージョンから外す" : "☆ マイバージョンに追加");
+  const rows = [
+    ["状態", el("span", { class: "st " + s.cls }, s.label)],
+    ["リリース日", fmt(t.released)],
+    t.eoas ? [eoasLabel, fmt(t.eoas) + (daysUntil(t.eoas) >= 0 ? `（あと${daysUntil(t.eoas)}日）` : "（終了）")] : null,
+    t.eoes ? ["延長サポート終了", fmt(t.eoes)] : null,
+    ["サポート終了（EOL）", fmt(t.eol) + (s.n !== null ? (s.n >= 0 ? `（あと${s.n}日）` : "（終了）") : "")],
+    t.type ? ["種別", t.type] : null,
+    ["最新バージョン", t.latest ? (safeUrl(t.latestLink) ? el("a", { href: t.latestLink, target: "_blank", rel: "noopener" }, t.latest) : t.latest) : "—"],
+    t.latestDate ? ["最新版の公開日", fmt(t.latestDate)] : null,
+  ].filter(Boolean);
+  return el("div", {},
+    topbar(`${p.name} ${t.label || t.train}`, vinfo(p.vendor).name, { backBtn: true }),
+    el("div", { class: "dt" },
+      el("div", { class: "big" }, avatar(p.vendor),
+        el("div", { class: "cd" }, s.n === null ? el("b", {}, "—") : el("b", { style: `color:${colorOf(s.cls)}` }, s.n < 0 ? `${-s.n}日経過` : `${s.n.toLocaleString()}日`),
+          el("span", {}, s.n === null ? "EOL日は未発表" : s.n < 0 ? "サポート終了から" : "サポート終了まで"))),
+      progress(t),
+      el("div", { class: "card" }, el("dl", { class: "kv" }, rows.map(([k, v]) => [el("dt", {}, k), el("dd", {}, v)])),
+        el("div", { class: "note" }, (p.source === "eol_date" ? "出典: endoflife.date（ベンダーの公開情報を集約したサイト）。" : "出典: ベンダー公式サイト。")
+          + "機種や契約によって延長サポートがある場合があるので、最終判断はベンダーの資料で確認してください。")),
+      starBtn,
+      safeUrl(p.link) ? el("a", { class: "btn sub", href: p.link, target: "_blank", rel: "noopener" }, "ベンダーのEOL情報を開く") : null,
+      evs.length ? el("div", {}, el("div", { class: "sec" }, "この系列のお知らせ"), el("div", { class: "card" }, evs.map(e =>
+        el("div", { class: "ev" }, el("div", { class: "ei e-" + e.type }, EV_ICON[e.type] || "•"), el("div", { class: "eb" }, el("b", {}, e.title), el("span", {}, fmt(e.date))))))) : null));
+}
+
+/* ---------- 画面: 設定 ---------- */
+function viewSettings() {
+  const myStr = MINE.join(",");
+  return el("div", {}, topbar("設定", "", { backBtn: true }),
+    el("div", { class: "wrap set" },
+      el("div", { class: "card" }, el("h2", {}, "通知するバージョン"),
+        el("p", {}, "通知は GitHub 側で設定します。下の文字列をコピーして、リポジトリの Settings → Secrets and variables → Actions → Variables に「MY_TRAINS」という名前で登録してください。"),
+        el("div", { style: "padding:0 14px" }, el("div", { class: "code" }, myStr || "（マイバージョンが未登録です）"),
+          myStr ? el("button", { class: "btn", onclick: async () => { try { await navigator.clipboard.writeText(myStr); toast("コピーしました"); } catch (_) { toast("コピーできませんでした。長押しで選択してください"); } } }, "コピーする") : null),
+        el("p", { style: "margin-bottom:12px" }, "MY_TRAINS が空のときは、サポート中のすべての系列について通知します。")),
+      el("div", { class: "card" }, el("h2", {}, "データの取得状況"),
+        (DATA.runs || []).map(r => el("div", { class: "src" }, el("span", {}, r.source), el("span", {}, r.ok ? `✅ ${r.count}` : "❌ 取得失敗")))),
+      el("div", { class: "card" }, el("h2", {}, "ほかのアプリ"),
+        el("div", { style: "padding:0 14px 6px" }, el("a", { class: "btn sub", href: "../sec/" }, "secwatch（セキュリティ情報）を開く"))),
+      el("div", { class: "card" }, el("h2", {}, "この端末のデータ"),
+        el("p", {}, "マイバージョンと既読はこの端末にだけ保存されています。"),
+        el("div", { style: "padding:0 14px 6px" }, el("button", { class: "btn sub", onclick: () => { for (const e of DATA.events) READ[e.id] = 1; store.set("read", READ); toast("すべて既読にしました"); } }, "お知らせをすべて既読にする")))));
+}
+
+function render() {
+  const r = route();
+  const v = r.name === "t" ? viewTrain(r.a, r.b) : r.name === "settings" ? viewSettings() : viewHome();
+  $("#app").replaceChildren(v);
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") load(false); });
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+render();
+load(false);
+</script>
+</body>
+</html>
