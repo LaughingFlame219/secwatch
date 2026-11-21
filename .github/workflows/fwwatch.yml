@@ -33,6 +33,9 @@ jobs:
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_WEBHOOK_FW: ${{ secrets.DISCORD_WEBHOOK_FW }}
+          DISCORD_MENTION: ${{ secrets.DISCORD_MENTION }}
           NTFY_SERVER: ${{ vars.NTFY_SERVER }}
           APP_URL: ${{ vars.APP_URL }}
           MY_TRAINS: ${{ vars.MY_TRAINS }}

@@ -41,6 +41,9 @@ jobs:
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_MENTION: ${{ secrets.DISCORD_MENTION }}
+          DISCORD_MIN_CVSS: ${{ vars.DISCORD_MIN_CVSS }}
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
           DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}
           TRANSLATE_DISABLE: ${{ vars.TRANSLATE_DISABLE }}
