@@ -46,7 +46,79 @@
       "name": "EOS",
       "source": "arista_eos_rss",
       "url": "https://www.arista.com/support/advisories-notices/end-of-support-rss",
-      "link": "https://www.arista.com/en/support/advisories-notices/end-of-support"
+      "link": "https://www.arista.com/en/support/product-documentation/eos-life-cycle-policy",
+      "matrix_image": "https://www.arista.com/assets/images/article/EOS-Life-Cycle-Policy.jpg",
+      "baseline_updated": "2026-10-23",
+      "baseline": [
+        {
+          "train": "4.36",
+          "released": "2026-04-08",
+          "eol": "2029-04-08",
+          "type": "新機能フェーズ"
+        },
+        {
+          "train": "4.35",
+          "released": "2025-10-06",
+          "eol": "2028-10-06",
+          "type": "保守フェーズ"
+        },
+        {
+          "train": "4.34",
+          "released": "2025-04-25",
+          "eol": "2028-04-25",
+          "type": "保守フェーズ"
+        },
+        {
+          "train": "4.33",
+          "released": "2024-10-10",
+          "eol": "2027-10-10",
+          "type": "保守フェーズ",
+          "note": "機種別の例外: 7280R/7280R2 は 2026-12-20、7500R/7500R2 は 2027-06-20、7020R は 2028-06-30（保守フェーズ）"
+        },
+        {
+          "train": "4.32",
+          "released": "2024-04-09",
+          "eol": "2027-04-09",
+          "type": "サポートのみ"
+        },
+        {
+          "train": "4.31",
+          "released": "2023-10-13",
+          "eol": "2026-10-13",
+          "type": "サポート終了"
+        },
+        {
+          "train": "4.30",
+          "released": "2023-04-14",
+          "eol": "2026-04-14",
+          "type": "サポート終了"
+        },
+        {
+          "train": "4.29",
+          "released": "2022-10-31",
+          "eol": "2025-10-31",
+          "type": "サポート終了"
+        },
+        {
+          "train": "4.28",
+          "released": "2022-04-18",
+          "eol": "2025-04-18",
+          "type": "サポート終了",
+          "note": "機種別の例外: 7050X/7050X2 は 2025-03-20、7300X は 2026-04-01、7010T は 2026-06-30（保守フェーズ）"
+        },
+        {
+          "train": "4.27",
+          "released": "2021-09-27",
+          "eol": "2024-09-27",
+          "type": "サポート終了"
+        },
+        {
+          "train": "4.26",
+          "released": "2021-04-15",
+          "eol": "2024-04-15",
+          "type": "サポート終了"
+        }
+      ]
     }
   ],
   "feeds": [

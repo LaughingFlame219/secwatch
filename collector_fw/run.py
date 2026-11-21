@@ -34,6 +34,7 @@ import urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "collector"))
 import secwatch_lib as lib  # noqa: E402  （secwatch の取得・RSS解析を流用）
+import discord  # noqa: E402
 
 CONFIG = os.path.join(ROOT, "collector_fw", "config.json")
 STATE = os.path.join(ROOT, "state_fw", "state.json")
@@ -141,8 +142,19 @@ ARISTA_EOL_RES = [
 
 
 def fetch_arista(p: dict) -> list[dict]:
-    items = lib.parse_rss(lib.http_get(p["url"], timeout=40), {"vendor": "Arista"})
+    # 公式のサポート表は画像でしか公開されていないため、書き起こした基準データを土台にする
     out = {}
+    for b in p.get("baseline", []):
+        out[b["train"]] = {"train": b["train"], "label": b["train"], "released": b.get("released", ""), "eoas": "",
+                           "eoes": "", "eol": b.get("eol", ""), "latest": "", "latestDate": "",
+                           "latestLink": p.get("link", ""), "lts": False, "type": b.get("type", ""),
+                           "note": b.get("note", ""), "maintained": None}
+    try:
+        items = lib.parse_rss(lib.http_get(p["url"], timeout=40), {"vendor": "Arista"})
+    except Exception:  # noqa: BLE001  RSS が取れなくても基準データは出す
+        if out:
+            return list(out.values())
+        raise
     for it in items:
         m = re.search(r"\bEOS[\s-]+(4\.\d+)", it["title"])
         if not m:
@@ -159,8 +171,11 @@ def fetch_arista(p: dict) -> list[dict]:
         mm = re.search(r"Release Date:\s*(\d{1,2}-[A-Za-z]+-\d{4})", text)
         if mm:
             rel = d_iso(mm.group(1))
-        out[m.group(1)] = {"train": m.group(1), "label": m.group(1), "released": rel, "eoas": "", "eoes": "", "eol": eol,
-                           "latest": "", "latestDate": "", "latestLink": it["url"], "lts": False, "type": "", "maintained": None}
+        prev = out.get(m.group(1), {})
+        out[m.group(1)] = {**prev, "train": m.group(1), "label": m.group(1), "released": rel or prev.get("released", ""),
+                           "eoas": "", "eoes": "", "eol": eol or prev.get("eol", ""), "latest": "", "latestDate": "",
+                           "latestLink": it["url"], "lts": False, "type": "サポート終了" if eol and eol <= today().isoformat() else prev.get("type", ""),
+                           "note": prev.get("note", ""), "maintained": None}
     if not out and not items:
         raise ValueError("RSS が空でした")
     return list(out.values())
@@ -187,10 +202,27 @@ def deep_link(pid: str, train: str = "") -> str:
     return base + (f"#/t/{urllib.parse.quote(pid, safe='')}/{urllib.parse.quote(train, safe='')}" if train else "")
 
 
+FW_ICON = {"arrow_up": "⬆️", "new": "🆕", "hourglass": "⏳", "loudspeaker": "📢", "bell": "🔔"}
+FW_COLOR = {"arrow_up": discord.COLOR["release"], "new": discord.COLOR["info"], "loudspeaker": discord.COLOR["MEDIUM"],
+            "bell": discord.COLOR["info"]}
+
+
 def push(title: str, message: str, click: str, prio: int = 3, tags: list | None = None) -> bool:
+    tag = (tags or ["bell"])[0]
+    if discord.enabled("fw"):
+        color = (discord.COLOR["eol"] if prio >= 5 else discord.COLOR["eol_soon"]) if tag == "hourglass" else FW_COLOR.get(tag, discord.COLOR["info"])
+        embed = {"title": discord.clip(title, 250), "description": discord.clip(message, 1500)
+                 + (f"\n\n[アプリで開く]({click})" if click.startswith("http") and "ntfy.sh" not in click else ""),
+                 "color": color, "footer": {"text": "FW・EOLウォッチ"}}
+        if click.startswith("http") and "ntfy.sh" not in click:
+            embed["url"] = click
+        base = app_url()
+        discord.send("fw", f"{FW_ICON.get(tag, '🔔')} {title}", embed, "FW・EOLウォッチ",
+                     base + "icon-192.png" if base else "", urgent=prio >= 5, log=log)
     topic = env("NTFY_TOPIC")
     if not topic:
-        log(f"  [通知:未設定のため表示のみ] {title} / {message}")
+        if not discord.enabled("fw"):
+            log(f"  [通知:未設定のため表示のみ] {title} / {message}")
         return True
     body = {"topic": topic, "title": title, "message": message, "priority": prio, "tags": tags or [], "click": click}
     base = app_url()
@@ -262,6 +294,23 @@ def main() -> int:
         trains.sort(key=lambda t: vkey(t["train"]), reverse=True)
         products.append({"id": p["id"], "vendor": p["vendor"], "name": p["name"], "source": p["source"],
                          "link": p.get("link", ""), "trains": trains})
+
+    for pc in cfg["products"]:
+        if not pc.get("matrix_image"):
+            continue
+        try:
+            h = hashlib.sha1(lib.http_get(pc["matrix_image"], timeout=40)).hexdigest()
+            key = f"matrix:{pc['id']}"
+            if st.get(key) and st[key] != h:
+                add_event({"type": "news", "vendor": pc["vendor"], "product": pc["id"],
+                           "title": f"{pc['name']} のサポート表が更新されました（新しい系列の追加や日付の変更）",
+                           "url": pc.get("link", ""), "date": d.isoformat()},
+                          (f"{VENDOR_NAME.get(pc['vendor'], pc['vendor'])} · {pc['name']} サポート表の更新",
+                           "公式のサポート表（画像）が更新されました。新しい系列や日付を確認して、collector_fw/config.json の baseline を更新してください。",
+                           pc.get("link", "") or deep_link(pc["id"]), 4, ["loudspeaker"]))
+            st[key] = h
+        except Exception as e:  # noqa: BLE001
+            log(f"[{pc['name']}] サポート表の確認に失敗: {e}")
 
     for p in products:
         for t in p["trains"]:
