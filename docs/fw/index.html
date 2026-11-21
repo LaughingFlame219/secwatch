@@ -321,7 +321,8 @@ function viewTrain(pid, train) {
     t.eoas ? [eoasLabel, fmt(t.eoas) + (daysUntil(t.eoas) >= 0 ? `（あと${daysUntil(t.eoas)}日）` : "（終了）")] : null,
     t.eoes ? ["延長サポート終了", fmt(t.eoes)] : null,
     ["サポート終了（EOL）", fmt(t.eol) + (s.n !== null ? (s.n >= 0 ? `（あと${s.n}日）` : "（終了）") : "")],
-    t.type ? ["種別", t.type] : null,
+    t.type ? [p.id === "arista-eos" ? "フェーズ" : "種別", t.type] : null,
+    t.note ? ["補足", t.note] : null,
     ["最新バージョン", t.latest ? (safeUrl(t.latestLink) ? el("a", { href: t.latestLink, target: "_blank", rel: "noopener" }, t.latest) : t.latest) : "—"],
     t.latestDate ? ["最新版の公開日", fmt(t.latestDate)] : null,
   ].filter(Boolean);
@@ -333,7 +334,7 @@ function viewTrain(pid, train) {
           el("span", {}, s.n === null ? "EOL日は未発表" : s.n < 0 ? "サポート終了から" : "サポート終了まで"))),
       progress(t),
       el("div", { class: "card" }, el("dl", { class: "kv" }, rows.map(([k, v]) => [el("dt", {}, k), el("dd", {}, v)])),
-        el("div", { class: "note" }, (p.source === "eol_date" ? "出典: endoflife.date（ベンダーの公開情報を集約したサイト）。" : "出典: ベンダー公式サイト。")
+        el("div", { class: "note" }, (p.source === "eol_date" ? "出典: endoflife.date（ベンダーの公開情報を集約したサイト）。" : p.id === "arista-eos" ? "出典: Arista 公式の EOS サポート表（2026年10月23日版）と End of Support の告知。" : "出典: ベンダー公式サイト。")
           + "機種や契約によって延長サポートがある場合があるので、最終判断はベンダーの資料で確認してください。")),
       starBtn,
       safeUrl(p.link) ? el("a", { class: "btn sub", href: p.link, target: "_blank", rel: "noopener" }, "ベンダーのEOL情報を開く") : null,
