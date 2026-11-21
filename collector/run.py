@@ -215,7 +215,7 @@ def app_url() -> str:
     if not u and env("GITHUB_REPOSITORY"):
         owner, repo = env("GITHUB_REPOSITORY").split("/", 1)
         u = f"https://{owner}.github.io/{repo}/"
-    return (u.rstrip("/") + "/") if u else ""
+    return (u.rstrip("/") + "/sec/") if u else ""
 
 
 def deep_link(a: dict) -> str:
